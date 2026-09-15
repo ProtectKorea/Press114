@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자유와국민주권수호단 - 관리자 제어 센터 (Press114)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #0f172a; }
+        .serif-font { font-family: 'Noto Serif KR', serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex flex-col">
+
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-red-600 text-white p-2.5 rounded-xl font-black text-xl shadow-lg flex items-center justify-center">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg sm:text-xl tracking-tight text-red-400">관리자 제어 센터 (Press114)</h1>
+                    <p class="text-xs text-slate-400 font-medium tracking-wide">레파지토리 B (Authoring & Sync Engine)</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="adminApp.exportBackup()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-download text-emerald-400"></i>
+                    <span>백업 (JSON)</span>
+                </button>
+                <label class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center space-x-2 transition cursor-pointer">
+                    <i class="fa-solid fa-upload text-blue-400"></i>
+                    <span>백업 로드</span>
+                    <input type="file" id="backupFileInput" accept=".json" onchange="adminApp.importBackup(event)" class="hidden">
+                </label>
+                <button onclick="adminApp.openConfigModal()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-key text-amber-400"></i>
+                    <span>GitHub 설정</span>
+                </button>
+                <a href="https://github.com/ProtectKorea/ProtectKorea.github.io" target="_blank" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center space-x-2 transition hidden sm:flex">
+                    <i class="fa-solid fa-globe text-emerald-400"></i>
+                    <span>일반모드(A) 방문</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col space-y-8">
+        
+        <!-- 대시보드 통계 및 배포 상태 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 flex items-center space-x-4">
+                <div class="bg-blue-900/50 text-blue-400 p-4 rounded-xl text-xl"><i class="fa-solid fa-folder-tree"></i></div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-400">관리 중인 문건</p>
+                    <h3 id="statTotal" class="text-2xl font-black text-white">0건</h3>
+                </div>
+            </div>
+            <div class="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 flex items-center space-x-4">
+                <div class="bg-emerald-900/50 text-emerald-400 p-4 rounded-xl text-xl"><i class="fa-solid fa-rotate"></i></div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-400">동기화 타겟 (A)</p>
+                    <h3 class="text-sm font-bold text-emerald-400 truncate max-w-[180px]">ProtectKorea.io</h3>
+                </div>
+            </div>
+            <div class="md:col-span-2 bg-gradient-to-r from-red-950/40 to-slate-800 p-5 rounded-2xl border border-red-900/40 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-red-400 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-circle-nodes"></i><span>자동 배포 파이프라인 (GitHub Actions)</span>
+                    </span>
+                    <span id="syncStatusBadge" class="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full">연동 대기중</span>
+                </div>
+                <p class="text-xs text-slate-300">관리자 모드에서 문건을 등록하거나 수정하면 A 레파지토리의 `data/archive-data.json`으로 실시간 푸시됩니다.</p>
+            </div>
+        </div>
+
+        <!-- 액션 툴바 및 파일 업로드 폼 영역 -->
+        <div class="bg-slate-800/90 p-6 rounded-3xl border border-slate-700 shadow-xl space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-slate-700">
+                <div>
+                    <h2 id="formTitle" class="text-xl font-black text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-file-circle-plus text-red-500"></i><span>신규 아카이브 문건 작성 및 문서 파일 업로드</span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">TXT, PDF, HTML 파일을 직접 업로드하거나 본문을 작성하여 일반모드(A)로 실시간 동기화합니다.</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="adminApp.resetForm()" id="cancelEditBtn" class="hidden px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs rounded-xl transition">
+                        수정 취소
+                    </button>
+                    <button onclick="adminApp.saveAndSync()" class="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-black text-sm rounded-xl shadow-lg shadow-red-600/30 transition flex items-center space-x-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i><span>저장 및 일반모드(A) 자동 동기화</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 파일 직접 첨부 업로드 바 -->
+            <div class="p-4 bg-slate-900/80 border border-slate-700 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="p-3 bg-red-500/20 text-red-400 rounded-xl text-lg"><i class="fa-solid fa-file-arrow-up"></i></div>
+                    <div>
+                        <h4 class="font-bold text-sm text-white">외부 문서 파일 불러오기 (TXT, PDF, HTML)</h4>
+                        <p class="text-xs text-slate-400">파일을 업로드하면 제목, 내용, 형식(TXT/PDF/HTML)이 자동 입력됩니다.</p>
+                    </div>
+                </div>
+                <label class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 font-bold text-xs rounded-xl cursor-pointer transition flex items-center space-x-2">
+                    <i class="fa-solid fa-folder-open"></i><span>문서 파일 선택</span>
+                    <input type="file" id="documentUploadInput" accept=".txt,.html,.pdf" onchange="adminApp.handleDocumentFileUpload(event)" class="hidden">
+                </label>
+            </div>
+
+            <!-- 입력 폼 그리드 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <input type="hidden" id="editIndex" value="-1">
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-300">카테고리</label>
+                    <select id="itemCategory" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option value="성명">성명</option>
+                        <option value="논평">논평</option>
+                        <option value="호소문">호소문</option>
+                        <option value="연설문">연설문</option>
+                        <option value="결의문">결의문</option>
+                        <option value="발언록">발언록</option>
+                        <option value="회의록">회의록</option>
+                        <option value="자료">자료</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+                <!-- 변경된 주제영역 목록 -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-300">주제 영역</label>
+                    <select id="itemTopic" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option value="국민주권">국민주권</option>
+                        <option value="국방안보">국방안보</option>
+                        <option value="정치">정치</option>
+                        <option value="경제">경제</option>
+                        <option value="사회">사회</option>
+                        <option value="국제">국제</option>
+                        <option value="역사">역사</option>
+                        <option value="미래">미래</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-300">문서 형식</label>
+                    <select id="itemFileType" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option value="TXT">TXT (일반 텍스트)</option>
+                        <option value="PDF">PDF (문서)</option>
+                        <option value="HTML">HTML (웹문서)</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-300">등록 일자</label>
+                    <input type="date" id="itemDate" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                </div>
+                <div class="md:col-span-4 space-y-2">
+                    <label class="block text-xs font-bold text-slate-300">문건 제목</label>
+                    <input type="text" id="itemTitle" placeholder="문건의 공식 제목을 입력하세요" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                </div>
+                <div class="md:col-span-4 space-y-2">
+                    <label class="block text-xs font-bold text-slate-300">문건 본문 내용</label>
+                    <textarea id="itemBody" rows="6" placeholder="성명서, 논설 본문 내용 또는 HTML/TXT 소스를 입력하세요..." class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white serif-font focus:outline-none focus:ring-2 focus:ring-red-500 custom-scrollbar"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 아카이브 관리 리스트 -->
+        <div class="bg-slate-800/90 p-6 rounded-3xl border border-slate-700 shadow-xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-lg text-white">등록된 아카이브 문건 관리 목록</h3>
+                <span id="listCount" class="text-xs font-medium text-slate-400">총 0개</span>
+            </div>
+            <div id="adminListArea" class="space-y-3">
+                <!-- 동적 렌더링 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 설정 모달 (토큰 및 레파지토리 경로) -->
+    <div id="configModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-lg text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-key text-amber-400"></i><span>GitHub 연동 설정 (PAT)</span>
+                </h3>
+                <button onclick="adminApp.closeConfigModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4 text-sm">
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    관리자 레파지토리(B)에서 일반모드 레파지토리(A)로 자동 푸시하기 위해 발급받은 <strong class="text-amber-400">GitHub Personal Access Token (PAT)</strong>을 입력합니다.
+                </p>
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-400">GitHub PAT Token</label>
+                    <input type="password" id="patInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-400">Target Repository A (일반모드 경로)</label>
+                    <input type="text" id="targetRepoInput" value="ProtectKorea/ProtectKorea.github.io" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button onclick="adminApp.closeConfigModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl">취소</button>
+                <button onclick="adminApp.saveConfig()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl">설정 저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 알림 및 로그 모달 -->
+    <div id="messageModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-xl">
+            <div id="msgIcon" class="text-4xl text-amber-500"><i class="fa-solid fa-circle-exclamation"></i></div>
+            <h4 id="msgTitle" class="font-bold text-lg text-white">알림</h4>
+            <p id="msgText" class="text-sm text-slate-300"></p>
+            <button onclick="adminApp.closeMessageModal()" class="w-full py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-sm transition">확인</button>
+        </div>
+    </div>
+
+    <script>
+        class AdminPressApp {
+            constructor() {
+                this.defaultItems = [
+                    {
+                        id: 1,
+                        category: '성명',
+                        topic: '국민주권',
+                        title: '대한민국 헌정 질서 수호를 위한 국민주권 선언문',
+                        body: '자유와국민주권수호단은 대한민국의 주권이 국민에게 있음을 엄숙히 선언하며, 민주주의의 근간을 훼손하는 모든 시도에 맞서 끝까지 국민주권을 수호할 것입니다.',
+                        date: '2026-03-01',
+                        fileType: 'TXT'
+                    },
+                    {
+                        id: 2,
+                        category: '논평',
+                        topic: '국방안보',
+                        title: '국가 안보 태세 확립과 굳건한 방위 역량 촉구 논평',
+                        body: '엄중한 국제 정세 속에서 대한민국의 안보 주권과 평화를 지키기 위해서는 빈틈없는 방위 역량과 확고한 동맹 기조가 필수적입니다.',
+                        date: '2026-03-10',
+                        fileType: 'HTML'
+                    }
+                ];
+
+                const stored = localStorage.getItem('press114_admin_archives');
+                if (stored) {
+                    try {
+                        this.items = JSON.parse(stored);
+                    } catch(e) {
+                        this.items = this.defaultItems;
+                    }
+                } else {
+                    this.items = this.defaultItems;
+                }
+
+                document.getElementById('itemDate').value = new Date().toISOString().split('T')[0];
+                this.render();
+            }
+
+            render() {
+                document.getElementById('statTotal').innerText = `${this.items.length}건`;
+                document.getElementById('listCount').innerText = `총 ${this.items.length}개`;
+                
+                const container = document.getElementById('adminListArea');
+                container.innerHTML = '';
+
+                if (this.items.length === 0) {
+                    container.innerHTML = `<p class="text-xs text-slate-500 text-center py-8">등록된 아카이브 문건이 없습니다.</p>`;
+                    return;
+                }
+
+                this.items.forEach((item, index) => {
+                    const row = document.createElement('div');
+                    row.className = "bg-slate-900/90 border border-slate-700/80 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-slate-600 transition";
+                    row.innerHTML = `
+                        <div class="space-y-1.5 flex-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2.5 py-0.5 bg-red-500/20 text-red-400 font-bold text-xs rounded-full">${item.category}</span>
+                                <span class="px-2.5 py-0.5 bg-slate-800 text-slate-300 font-medium text-xs rounded-full">${item.topic}</span>
+                                <span class="px-2 py-0.5 bg-slate-950 text-amber-400 font-black text-[10px] rounded">${item.fileType || 'TXT'}</span>
+                                <span class="text-xs text-slate-500">${item.date}</span>
+                            </div>
+                            <h4 class="font-bold text-white text-base">${item.title}</h4>
+                            <p class="text-xs text-slate-400 serif-font line-clamp-1">${item.body}</p>
+                        </div>
+                        <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                            <button onclick="adminApp.editItem(${index})" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition">수정</button>
+                            <button onclick="adminApp.deleteItem(${index})" class="px-3 py-1.5 bg-red-950/60 hover:bg-red-900 text-red-400 font-bold text-xs rounded-xl transition">삭제</button>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+
+            handleDocumentFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const fileName = file.name;
+                const ext = fileName.split('.').pop().toLowerCase();
+                let detectedType = 'TXT';
+                if (ext === 'html' || ext === 'htm') detectedType = 'HTML';
+                if (ext === 'pdf') detectedType = 'PDF';
+
+                document.getElementById('itemFileType').value = detectedType;
+                document.getElementById('itemTitle.value') || (document.getElementById('itemTitle').value = fileName.replace(/\.[^/.]+$/, ""));
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    document.getElementById('itemBody').value = content;
+                    this.showAlert("파일 로드 완료", `'${fileName}' 파일의 내용과 형식이 성공적으로 입력되었습니다.`);
+                };
+
+                if (detectedType === 'PDF') {
+                    document.getElementById('itemBody').value = `[PDF 문서 첨부됨: ${fileName}]\n(이진 PDF 파일 내용이 등록되었습니다.)`;
+                    this.showAlert("PDF 첨부 완료", `'${fileName}' 파일이 PDF 문서 형식으로 등록되었습니다.`);
+                } else {
+                    reader.readAsText(file, 'utf-8');
+                }
+            }
+
+            exportBackup() {
+                const dataStr = JSON.stringify(this.items, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `archive-data-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                this.showAlert("백업 완료", "전체 아카이브 데이터가 JSON 파일로 백업되었습니다.");
+            }
+
+            importBackup(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        if (Array.isArray(importedData)) {
+                            this.items = importedData;
+                            localStorage.setItem('press114_admin_archives', JSON.stringify(this.items));
+                            this.render();
+                            this.showAlert("백업 로드 성공", `총 ${this.items.length}건의 아카이브 데이터가 정상적으로 복원되었습니다.`);
+                        } else {
+                            throw new Error("유효하지 않은 JSON 구조입니다.");
+                        }
+                    } catch(err) {
+                        this.showAlert("로드 실패", `백업 파일을 읽는 중 오류가 발생했습니다: ${err.message}`);
+                    }
+                };
+                reader.readAsText(file, 'utf-8');
+            }
+
+            saveAndSync() {
+                const category = document.getElementById('itemCategory').value;
+                const topic = document.getElementById('itemTopic').value;
+                const fileType = document.getElementById('itemFileType').value;
+                const date = document.getElementById('itemDate').value;
+                const title = document.getElementById('itemTitle').value.trim();
+                const body = document.getElementById('itemBody').value.trim();
+                const editIndex = parseInt(document.getElementById('editIndex').value);
+
+                if (!title || !body) {
+                    this.showAlert("입력 오류", "문건 제목과 본문 내용을 모두 입력해주세요.");
+                    return;
+                }
+
+                const newItem = {
+                    id: editIndex === -1 ? (this.items.length > 0 ? Math.max(...this.items.map(i => i.id)) + 1 : 1) : this.items[editIndex].id,
+                    category, topic, fileType, title, body, date: date || new Date().toISOString().split('T')[0]
+                };
+
+                if (editIndex === -1) {
+                    this.items.unshift(newItem);
+                } else {
+                    this.items[editIndex] = newItem;
+                }
+
+                localStorage.setItem('press114_admin_archives', JSON.stringify(this.items));
+                this.resetForm();
+                this.render();
+                this.triggerGitHubSync(newItem);
+            }
+
+            editItem(index) {
+                const item = this.items[index];
+                document.getElementById('itemCategory').value = item.category;
+                document.getElementById('itemTopic').value = item.topic;
+                document.getElementById('itemFileType').value = item.fileType || 'TXT';
+                document.getElementById('itemDate').value = item.date;
+                document.getElementById('itemTitle').value = item.title;
+                document.getElementById('itemBody').value = item.body;
+                document.getElementById('editIndex').value = index;
+
+                document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-500"></i><span>아카이브 문건 수정 중 (#${item.id})</span>`;
+                document.getElementById('cancelEditBtn').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            resetForm() {
+                document.getElementById('itemTitle').value = '';
+                document.getElementById('itemBody').value = '';
+                document.getElementById('itemDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('editIndex').value = '-1';
+                document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-file-circle-plus text-red-500"></i><span>신규 아카이브 문건 작성 및 문서 파일 업로드</span>`;
+                document.getElementById('cancelEditBtn').classList.add('hidden');
+            }
+
+            deleteItem(index) {
+                if (confirm("정말 이 아카이브 문건을 삭제하시겠습니까?")) {
+                    this.items.splice(index, 1);
+                    localStorage.setItem('press114_admin_archives', JSON.stringify(this.items));
+                    this.render();
+                }
+            }
+
+            openConfigModal() {
+                document.getElementById('patInput').value = localStorage.getItem('press114_github_pat') || '';
+                document.getElementById('targetRepoInput').value = localStorage.getItem('press114_target_repo') || 'ProtectKorea/ProtectKorea.github.io';
+                document.getElementById('configModal').classList.remove('hidden');
+            }
+
+            closeConfigModal() {
+                document.getElementById('configModal').classList.add('hidden');
+            }
+
+            saveConfig() {
+                const pat = document.getElementById('patInput').value.trim();
+                const targetRepo = document.getElementById('targetRepoInput').value.trim();
+                if (!pat) {
+                    this.showAlert("설정 경고", "GitHub PAT 토큰을 입력해주세요.");
+                    return;
+                }
+                localStorage.setItem('press114_github_pat', pat);
+                localStorage.setItem('press114_target_repo', targetRepo);
+                this.closeConfigModal();
+                this.showAlert("설정 완료", "GitHub 연동 정보가 안전하게 저장되었습니다.");
+            }
+
+            async triggerGitHubSync(latestItem) {
+                const pat = localStorage.getItem('press114_github_pat');
+                const targetRepo = localStorage.getItem('press114_target_repo') || 'ProtectKorea/ProtectKorea.github.io';
+                
+                if (!pat) {
+                    this.showAlert("로컬 저장 완료", "데이터가 관리자 모드에 저장되었습니다. (GitHub 자동 동기화를 원하시면 상단의 [GitHub 설정]에서 PAT 토큰을 등록해주세요)");
+                    return;
+                }
+
+                document.getElementById('syncStatusBadge').className = "px-2.5 py-0.5 bg-amber-500/20 text-amber-400 text-xs font-bold rounded-full animate-pulse";
+                document.getElementById('syncStatusBadge').innerText = "일반모드(A) 동기화 전송 중...";
+
+                try {
+                    const jsonContent = JSON.stringify(this.items, null, 2);
+                    const encodedContent = btoa(unescape(encodeURIComponent(jsonContent)));
+                    const filePath = "data/archive-data.json";
+                    const apiUrl = `https://api.github.com/repos/${targetRepo}/contents/${filePath}`;
+
+                    let fileSha = null;
+                    const getRes = await fetch(apiUrl, {
+                        headers: { 'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github.v3+json' }
+                    });
+                    if (getRes.ok) {
+                        const fileData = await getRes.json();
+                        fileSha = fileData.sha;
+                    }
+
+                    const putBody = {
+                        message: `Admin Sync: Update archive data from Press114 (${new Date().toLocaleString()})`,
+                        content: encodedContent,
+                        branch: "main"
+                    };
+                    if (fileSha) putBody.sha = fileSha;
+
+                    const putRes = await fetch(apiUrl, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `token ${pat}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+                        body: JSON.stringify(putBody)
+                    });
+
+                    if (putRes.ok) {
+                        document.getElementById('syncStatusBadge').className = "px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full";
+                        document.getElementById('syncStatusBadge').innerText = "일반모드(A) 동기화 완료!";
+                        this.showAlert("동기화 성공", "관리자 데이터가 일반모드 레파지토리(A)에 성공적으로 반영되었습니다!");
+                    } else {
+                        const errJson = await putRes.json();
+                        throw new Error(errJson.message || "GitHub API 전송 실패");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    document.getElementById('syncStatusBadge').className = "px-2.5 py-0.5 bg-red-500/20 text-red-400 text-xs font-bold rounded-full";
+                    document.getElementById('syncStatusBadge').innerText = "동기화 실패";
+                    this.showAlert("동기화 오류", `관리자 저장소에는 반영되었으나 일반모드(A) 푸시에 실패했습니다: ${err.message}`);
+                }
+            }
+
+            showAlert(title, text) {
+                document.getElementById('msgTitle').innerText = title;
+                document.getElementById('msgText').innerText = text;
+                document.getElementById('messageModal').classList.remove('hidden');
+            }
+
+            closeMessageModal() {
+                document.getElementById('messageModal').classList.add('hidden');
+            }
+        }
+
+        const adminApp = new AdminPressApp();
+    </script>
+</body>
+</html>
