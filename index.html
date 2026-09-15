@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자유와 국민주권수호단 논설 아카이브</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Noto Sans KR & Noto Serif KR) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8fafc;
+        }
+        .serif-font {
+            font-family: 'Noto Serif KR', serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col">
+
+    <!-- 상단 네비게이션 바 -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="app.resetView()">
+                <div class="bg-amber-500 text-slate-900 p-2.5 rounded-xl font-black text-xl shadow-lg flex items-center justify-center">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg sm:text-xl tracking-tight text-amber-400">자유와 국민주권수호단</h1>
+                    <p class="text-xs text-slate-300 font-medium tracking-wide">논설 및 공식 공보 아카이브 (약칭 자.주.단)</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="app.openUploadModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2.5 rounded-xl transition duration-200 shadow-md flex items-center space-x-2 text-sm">
+                    <i class="fa-solid fa-pen-nib"></i>
+                    <span class="hidden sm:inline">문건 등록 / 공보</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 컨테이너 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col">
+        
+        <!-- 대시보드 통계 카드 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4">
+                <div class="bg-blue-50 text-blue-600 p-4 rounded-xl text-xl"><i class="fa-solid fa-folder-open"></i></div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-500">전체 아카이브</p>
+                    <h3 id="statTotal" class="text-2xl font-black text-slate-800">0건</h3>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4">
+                <div class="bg-amber-50 text-amber-600 p-4 rounded-xl text-xl"><i class="fa-solid fa-bullhorn"></i></div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-500">성명 및 논평</p>
+                    <h3 id="statNotice" class="text-2xl font-black text-slate-800">0건</h3>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4">
+                <div class="bg-emerald-50 text-emerald-600 p-4 rounded-xl text-xl"><i class="fa-solid fa-file-lines"></i></div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-500">연설 및 호소문</p>
+                    <h3 id="statSpeech" class="text-2xl font-black text-slate-800">0건</h3>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4">
+                <div class="bg-purple-50 text-purple-600 p-4 rounded-xl text-xl"><i class="fa-solid fa-comments"></i></div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-500">회의록 및 발언록</p>
+                    <h3 id="statMeeting" class="text-2xl font-black text-slate-800">0건</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- 검색 및 필터 툴바 -->
+        <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 space-y-4">
+            <div class="flex flex-col md:flex-row gap-4 justify-between items-center">
+                <div class="relative w-full md:w-96">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="searchInput" placeholder="제목, 내용, 키워드 검색..." oninput="app.handleSearch()" 
+                           class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white text-sm transition">
+                </div>
+                <div class="flex flex-wrap gap-2 w-full md:w-auto justify-end">
+                    <select id="categoryFilter" onchange="app.handleFilter()" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <option value="">모든 카테고리</option>
+                        <option value="논평">논평</option>
+                        <option value="성명">성명</option>
+                        <option value="호소문">호소문</option>
+                        <option value="연설문">연설문</option>
+                        <option value="결의문">결의문</option>
+                        <option value="발언록">발언록</option>
+                        <option value="회의록">회의록</option>
+                    </select>
+                    <select id="topicFilter" onchange="app.handleFilter()" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <option value="">모든 주제</option>
+                        <option value="국방안보">국방안보</option>
+                        <option value="정치">정치</option>
+                        <option value="경제">경제</option>
+                        <option value="제도">제도</option>
+                        <option value="외교">외교</option>
+                        <option value="사회문화">사회문화</option>
+                        <option value="종교">종교</option>
+                        <option value="과학기술">과학기술</option>
+                        <option value="민생">민생</option>
+                        <option value="복지">복지</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 아카이브 리스트 및 상세 뷰 영역 -->
+        <div id="contentArea" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- 동적 렌더링 카드 위치 -->
+        </div>
+
+        <!-- 상세 보기 패널 (모달 형태) -->
+        <div id="detailModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div class="p-6 bg-slate-900 text-white flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <span id="detailCategoryBadge" class="px-3 py-1 bg-amber-500 text-slate-950 font-bold text-xs rounded-full">논평</span>
+                        <span id="detailTopicBadge" class="px-3 py-1 bg-slate-800 text-slate-300 font-medium text-xs rounded-full border border-slate-700">국방안보</span>
+                    </div>
+                    <button onclick="app.closeDetailModal()" class="text-slate-400 hover:text-white p-2 text-lg">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div class="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+                    <div>
+                        <h2 id="detailTitle" class="text-2xl sm:text-3xl font-black text-slate-900 leading-snug"></h2>
+                        <p id="detailDate" class="text-xs text-slate-500 mt-2 font-medium"></p>
+                    </div>
+                    <hr class="border-slate-100">
+                    <div id="detailBody" class="serif-font text-slate-700 leading-relaxed text-base sm:text-lg whitespace-pre-wrap"></div>
+                </div>
+                <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end space-x-3">
+                    <button onclick="app.copyDetailContent()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm rounded-xl transition flex items-center space-x-2">
+                        <i class="fa-solid fa-copy"></i><span>내용 복사</span>
+                    </button>
+                    <button onclick="app.closeDetailModal()" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl transition">
+                        닫기
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 문서 등록 / 업로드 모달 -->
+        <div id="uploadModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
+                <div class="p-6 bg-slate-900 text-white flex justify-between items-center">
+                    <h3 class="font-black text-lg flex items-center space-x-2 text-amber-400">
+                        <i class="fa-solid fa-cloud-arrow-up"></i><span>자.주.단 공식 문건 등록</span>
+                    </h3>
+                    <button onclick="app.closeUploadModal()" class="text-slate-400 hover:text-white p-2">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <form id="uploadForm" onsubmit="app.handleSubmit(event)" class="p-6 sm:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-5">
+                    
+                    <!-- 파일 업로드 연동 영역 -->
+                    <div class="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-amber-500 transition cursor-pointer bg-slate-50 relative">
+                        <input type="file" id="fileInput" accept=".txt,.html,.htm,.pdf" onchange="app.handleFileImport(event)" class="absolute inset-0 opacity-0 cursor-pointer">
+                        <div class="space-y-2">
+                            <div class="text-amber-500 text-3xl"><i class="fa-solid fa-file-arrow-up"></i></div>
+                            <h4 class="font-bold text-slate-800 text-sm">텍스트, PDF, HTML 파일 가져오기</h4>
+                            <p class="text-xs text-slate-500">또는 아래 입력 칸에 직접 제목과 내용을 작성하세요.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">공보 카테고리</label>
+                            <select id="inputCategory" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                <option value="논평">논평</option>
+                                <option value="성명">성명</option>
+                                <option value="호소문">호소문</option>
+                                <option value="연설문">연설문</option>
+                                <option value="결의문">결의문</option>
+                                <option value="발언록">발언록</option>
+                                <option value="회의록">회의록</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">주제 분류</label>
+                            <select id="inputTopic" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                <option value="국방안보">국방안보</option>
+                                <option value="정치">정치</option>
+                                <option value="경제">경제</option>
+                                <option value="제도">제도</option>
+                                <option value="외교">외교</option>
+                                <option value="사회문화">사회문화</option>
+                                <option value="종교">종교</option>
+                                <option value="과학기술">과학기술</option>
+                                <option value="민생">민생</option>
+                                <option value="복지">복지</option>
+                                <option value="기타">기타</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">문건 제목</label>
+                        <input type="text" id="inputTitle" required placeholder="예: 대한민국 안보 주권 수호를 위한 비상 성명서" 
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">본문 내용</label>
+                        <textarea id="inputBody" required rows="8" placeholder="자유와 국민주권을 수호하는 자.주.단의 공식 논설 또는 성명 내용을 입력하세요..." 
+                                  class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none custom-scrollbar"></textarea>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+                        <button type="button" onclick="app.closeUploadModal()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition">
+                            취소
+                        </button>
+                        <button type="submit" class="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-sm rounded-xl transition shadow-md">
+                            아카이브 등록 완료
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 커스텀 알림 메시지 박스 -->
+        <div id="messageModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-xl">
+                <div id="msgIcon" class="text-4xl text-amber-500"><i class="fa-solid fa-circle-exclamation"></i></div>
+                <h4 id="msgTitle" class="font-bold text-lg text-slate-900">알림</h4>
+                <p id="msgText" class="text-sm text-slate-600"></p>
+                <button onclick="app.closeMessageModal()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition">확인</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-2 text-xs">
+            <p class="font-bold text-slate-300">자유와 국민주권수호단 (약칭 자.주.단)</p>
+            <p>대한민국의 자유와 헌법적 가치, 그리고 국민주권을 수호하기 위한 공식 논설 및 기록 보관소입니다.</p>
+            <p class="text-slate-500 pt-2">&copy; 2026 ZAJUDAN Archive. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        class ArchiveApp {
+            constructor() {
+                this.items = JSON.parse(localStorage.getItem('zajudan_archives')) || [
+                    {
+                        id: 1,
+                        category: '성명',
+                        topic: '국방안보',
+                        title: '대한민국 안보 주권 수호를 위한 비상 성명서',
+                        body: '자유와 국민주권수호단은 오늘날 한반도를 둘러싼 엄중한 안보 현실을 직시하며, 대한민국의 자유민주주의 체제와 국민의 생명과 안전을 수호하기 위한 결연한 입장을 밝힙니다. 굳건한 한미동맹과 자주적 방위 역량의 조화를 바탕으로 국가 안보를 수호할 것입니다.',
+                        date: '2026-03-01'
+                    },
+                    {
+                        id: 2,
+                        category: '논평',
+                        topic: '경제',
+                        title: '자유시장경제의 원칙과 민생 안정을 위한 제언',
+                        body: '과도한 규제와 시장 개입은 경제 활력을 저해하고 국민 고통을 가중시킵니다. 자.주.단은 공정한 경쟁과 시장 자율성이 보장되는 경제 제도 개혁을 강력히 촉구하며, 민생 경제 회복을 위한 실효성 있는 대책 마련을 요구합니다.',
+                        date: '2026-03-10'
+                    }
+                ];
+                this.currentFiltered = [...this.items];
+                this.activeDetailId = null;
+                this.init();
+            }
+
+            init() {
+                this.render();
+            }
+
+            saveToStorage() {
+                localStorage.setItem('zajudan_archives', JSON.stringify(this.items));
+            }
+
+            render() {
+                this.updateStats();
+                const container = document.getElementById('contentArea');
+                container.innerHTML = '';
+
+                if (this.currentFiltered.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full py-16 text-center bg-white rounded-2xl border border-slate-200">
+                            <div class="text-4xl text-slate-300 mb-3"><i class="fa-solid fa-folder-open"></i></div>
+                            <p class="text-slate-500 font-medium">등록된 아카이브 문건이 없습니다.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                this.currentFiltered.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition flex flex-col justify-between space-y-4 group";
+                    card.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="px-3 py-1 bg-amber-100 text-amber-800 font-bold text-xs rounded-full">${item.category}</span>
+                                <span class="px-3 py-1 bg-slate-100 text-slate-600 font-medium text-xs rounded-full">${item.topic}</span>
+                            </div>
+                            <h3 class="font-bold text-lg text-slate-900 group-hover:text-amber-600 transition line-clamp-2">${item.title}</h3>
+                            <p class="serif-font text-slate-600 text-sm line-clamp-3 leading-relaxed">${item.body}</p>
+                        </div>
+                        <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                            <span class="text-xs text-slate-400 font-medium"><i class="fa-regular fa-calendar mr-1"></i>${item.date}</span>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="app.openDetail(${item.id})" class="px-3.5 py-1.5 bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-white font-bold text-xs rounded-lg transition">
+                                    상세보기
+                                </button>
+                                <button onclick="app.deleteItem(${item.id})" class="p-1.5 text-slate-400 hover:text-red-500 transition" title="삭제">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+
+            updateStats() {
+                document.getElementById('statTotal').innerText = `${this.items.length}건`;
+                document.getElementById('statNotice').innerText = `${this.items.filter(i => i.category === '성명' || i.category === '논평').length}건`;
+                document.getElementById('statSpeech').innerText = `${this.items.filter(i => i.category === '연설문' || i.category === '호소문' || i.category === '결의문').length}건`;
+                document.getElementById('statMeeting').innerText = `${this.items.filter(i => i.category === '회의록' || i.category === '발언록').length}건`;
+            }
+
+            handleSearch() {
+                this.applyFilters();
+            }
+
+            handleFilter() {
+                this.applyFilters();
+            }
+
+            applyFilters() {
+                const query = document.getElementById('searchInput').value.toLowerCase();
+                const cat = document.getElementById('categoryFilter').value;
+                const top = document.getElementById('topicFilter').value;
+
+                this.currentFiltered = this.items.filter(item => {
+                    const matchesQuery = item.title.toLowerCase().includes(query) || item.body.toLowerCase().includes(query);
+                    const matchesCat = cat === "" || item.category === cat;
+                    const matchesTop = top === "" || item.topic === top;
+                    return matchesQuery && matchesCat && matchesTop;
+                });
+                this.render();
+            }
+
+            resetView() {
+                document.getElementById('searchInput').value = '';
+                document.getElementById('categoryFilter').value = '';
+                document.getElementById('topicFilter').value = '';
+                this.currentFiltered = [...this.items];
+                this.render();
+            }
+
+            openUploadModal() {
+                document.getElementById('uploadForm').reset();
+                document.getElementById('uploadModal').classList.remove('hidden');
+            }
+
+            closeUploadModal() {
+                document.getElementById('uploadModal').classList.add('hidden');
+            }
+
+            handleFileImport(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    document.getElementById('inputTitle').value = file.name.replace(/\.[^/.]+$/, "");
+                    
+                    // 간단한 HTML/텍스트 파싱
+                    if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = content;
+                        document.getElementById('inputBody').value = tempDiv.textContent || tempDiv.innerText || "";
+                    } else {
+                        document.getElementById('inputBody').value = content;
+                    }
+                    this.showAlert("파일 로드 성공", "문건 내용이 성공적으로 불러와졌습니다. 내용을 검토 후 등록해주세요.");
+                };
+                reader.readAsText(file, "UTF-8");
+            }
+
+            handleSubmit(event) {
+                event.preventDefault();
+                const category = document.getElementById('inputCategory').value;
+                const topic = document.getElementById('inputTopic').value;
+                const title = document.getElementById('inputTitle').value;
+                const body = document.getElementById('inputBody').value;
+                const date = new Date().toISOString().split('T')[0];
+
+                const newItem = {
+                    id: Date.now(),
+                    category,
+                    topic,
+                    title,
+                    body,
+                    date
+                };
+
+                this.items.unshift(newItem);
+                this.saveToStorage();
+                this.applyFilters();
+                this.closeUploadModal();
+                this.showAlert("등록 완료", "새로운 공보 문건이 아카이브에 안전하게 등록되었습니다.");
+            }
+
+            openDetail(id) {
+                const item = this.items.find(i => i.id === id);
+                if (!item) return;
+                this.activeDetailId = id;
+
+                document.getElementById('detailCategoryBadge').innerText = item.category;
+                document.getElementById('detailTopicBadge').innerText = item.topic;
+                document.getElementById('detailTitle').innerText = item.title;
+                document.getElementById('detailDate').innerText = `등록일자: ${item.date}`;
+                document.getElementById('detailBody').innerText = item.body;
+
+                document.getElementById('detailModal').classList.remove('hidden');
+            }
+
+            closeDetailModal() {
+                document.getElementById('detailModal').classList.add('hidden');
+                this.activeDetailId = null;
+            }
+
+            copyDetailContent() {
+                const title = document.getElementById('detailTitle').innerText;
+                const body = document.getElementById('detailBody').innerText;
+                const fullText = `[${title}]\n\n${body}`;
+                
+                const textarea = document.createElement('textarea');
+                textarea.value = fullText;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    this.showAlert("복사 완료", "클립보드에 문건 내용이 복사되었습니다.");
+                } catch (err) {
+                    this.showAlert("복사 실패", "클립보드 복사에 실패했습니다.");
+                }
+                document.body.removeChild(textarea);
+            }
+
+            deleteItem(id) {
+                if (confirm("정말 이 아카이브 문건을 삭제하시겠습니까?")) {
+                    this.items = this.items.filter(i => i.id !== id);
+                    this.saveToStorage();
+                    this.applyFilters();
+                    this.showAlert("삭제 완료", "문건이 아카이브에서 삭제되었습니다.");
+                }
+            }
+
+            showAlert(title, text) {
+                document.getElementById('msgTitle').innerText = title;
+                document.getElementById('msgText').innerText = text;
+                document.getElementById('messageModal').classList.remove('hidden');
+            }
+
+            closeMessageModal() {
+                document.getElementById('messageModal').classList.add('hidden');
+            }
+        }
+
+        const app = new ArchiveApp();
+    </script>
+</body>
+</html>
